@@ -20,6 +20,9 @@ build:
   artifacts:
   - image: transactionhistory
     jib: {}
+requires:
+- path: ./../setup
+- path: ./../ledger-db
 deploy:
   kubectl:
     manifests:

@@ -64,6 +64,19 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        # Define database connection variables
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://ledger-db:5432/postgresdb"
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: ledger-db-config
+              key: POSTGRES_USER
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: ledger-db-config
+              key: POSTGRES_PASSWORD
         envFrom:
         - configMapRef:
             name: environment-config

@@ -21,8 +21,7 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.UncheckedExecutionException;
-import io.micrometer.core.instrument.binder.cache.GuavaCacheMetrics;
-import io.micrometer.stackdriver.StackdriverMeterRegistry;
+// Removed metrics dependencies for simplicity
 import java.util.Collection;
 import java.util.Deque;
 import java.util.concurrent.ExecutionException;
@@ -30,6 +29,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.lang.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -69,7 +69,6 @@ public final class TransactionHistoryController {
      */
     @Autowired
     public TransactionHistoryController(LedgerReader reader,
-            StackdriverMeterRegistry meterRegistry,
             JWTVerifier verifier,
             @Value("${PUB_KEY_PATH}") final String publicKeyPath,
             LoadingCache<String, Deque<Transaction>> cache,
@@ -80,7 +79,6 @@ public final class TransactionHistoryController {
         this.verifier = verifier;
         // Initialize cache
         this.cache = cache;
-        GuavaCacheMetrics.monitor(meterRegistry, this.cache, "Guava");
         // Initialize transaction processor.
         this.ledgerReader = reader;
         LOGGER.debug("Initialized transaction processor");
@@ -124,8 +122,8 @@ public final class TransactionHistoryController {
      * @return  service version string
      */
     @GetMapping("/version")
-    public ResponseEntity version() {
-        return new ResponseEntity<String>(version, HttpStatus.OK);
+    public ResponseEntity<String> version() {
+        return new ResponseEntity<>(version, HttpStatus.OK);
     }
 
     /**
@@ -145,14 +143,14 @@ public final class TransactionHistoryController {
      * @return HTTP Status 200 if server is healthy and serving requests.
      */
     @GetMapping("/healthy")
-    public ResponseEntity liveness() {
+    public ResponseEntity<String> liveness() {
         if (!ledgerReader.isAlive()) {
             // background thread died.
             LOGGER.error("Ledger reader not healthy");
-            return new ResponseEntity<String>("Ledger reader not healthy",
+            return new ResponseEntity<>("Ledger reader not healthy",
                                               HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        return new ResponseEntity<String>("ok", HttpStatus.OK);
+        return new ResponseEntity<>("ok", HttpStatus.OK);
     }
 
     /**
@@ -177,7 +175,7 @@ public final class TransactionHistoryController {
             if (!accountId.equals(jwt.getClaim("acct").asString())) {
                 LOGGER.error("Failed to retrieve account transactions: "
                     + "not authorized");
-                return new ResponseEntity<String>("not authorized",
+                return new ResponseEntity<>("not authorized",
                                                   HttpStatus.UNAUTHORIZED);
             }
 
@@ -194,16 +192,16 @@ public final class TransactionHistoryController {
                 }
             }
 
-            return new ResponseEntity<Collection<Transaction>>(
+            return new ResponseEntity<>(
                     historyList, HttpStatus.OK);
         } catch (JWTVerificationException e) {
             LOGGER.error("Failed to retrieve account transactions: "
                 + "not authorized");
-            return new ResponseEntity<String>("not authorized",
+            return new ResponseEntity<>("not authorized",
                                               HttpStatus.UNAUTHORIZED);
         } catch (ExecutionException | UncheckedExecutionException e) {
             LOGGER.error("Cache error");
-            return new ResponseEntity<String>("cache error",
+            return new ResponseEntity<>("cache error",
                                               HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

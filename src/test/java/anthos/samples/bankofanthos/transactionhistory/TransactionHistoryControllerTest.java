@@ -19,7 +19,7 @@ package anthos.samples.bankofanthos.transactionhistory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.MockitoAnnotations.openMocks;
 
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.exceptions.JWTVerificationException;
@@ -27,10 +27,7 @@ import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.common.cache.CacheStats;
 import com.google.common.cache.LoadingCache;
-import io.micrometer.core.instrument.Clock;
-import io.micrometer.core.lang.Nullable;
-import io.micrometer.stackdriver.StackdriverConfig;
-import io.micrometer.stackdriver.StackdriverMeterRegistry;
+// Removed metric dependencies
 import java.util.Deque;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,8 +49,7 @@ class TransactionHistoryControllerTest {
     private DecodedJWT jwt;
     @Mock
     private Claim claim;
-    @Mock
-    private Clock clock;
+    // Removed clock mock
     @Mock
     private LoadingCache<String, Deque<Transaction>> cache;
     @Mock
@@ -73,28 +69,10 @@ class TransactionHistoryControllerTest {
 
     @BeforeEach
     void setUp() {
-        initMocks(this);
-        StackdriverMeterRegistry meterRegistry = new StackdriverMeterRegistry(new StackdriverConfig() {
-            @Override
-            public boolean enabled() {
-                return false;
-            }
-
-            @Override
-            public String projectId() {
-                return "test";
-            }
-
-            @Override
-            @Nullable
-            public String get(String key) {
-                return null;
-            }
-        }, clock);
-
+        openMocks(this);
         when(cache.stats()).thenReturn(stats);
         transactionHistoryController = new TransactionHistoryController(ledgerReader,
-            meterRegistry, verifier, PUBLIC_KEY_PATH, cache, LOCAL_ROUTING_NUM, VERSION);
+            verifier, PUBLIC_KEY_PATH, cache, LOCAL_ROUTING_NUM, VERSION);
 
         when(verifier.verify(TOKEN)).thenReturn(jwt);
         when(jwt.getClaim(JWT_ACCOUNT_KEY)).thenReturn(claim);
@@ -105,7 +83,7 @@ class TransactionHistoryControllerTest {
             "return a ResponseEntity with the version number")
     void version() {
         // When
-        final ResponseEntity actualResult = transactionHistoryController.version();
+        final ResponseEntity<String> actualResult = transactionHistoryController.version();
 
         // Then
         assertNotNull(actualResult);
@@ -131,7 +109,7 @@ class TransactionHistoryControllerTest {
         when(ledgerReader.isAlive()).thenReturn(true);
 
         // When
-        final ResponseEntity actualResult = transactionHistoryController.liveness();
+        final ResponseEntity<String> actualResult = transactionHistoryController.liveness();
 
         // Then
         assertNotNull(actualResult);
@@ -146,7 +124,7 @@ class TransactionHistoryControllerTest {
         when(ledgerReader.isAlive()).thenReturn(false);
         
         // When
-        final ResponseEntity actualResult = transactionHistoryController.liveness();
+        final ResponseEntity<String> actualResult = transactionHistoryController.liveness();
 
         // Then
         assertNotNull(actualResult);
@@ -163,7 +141,7 @@ class TransactionHistoryControllerTest {
         when(cache.get(AUTHED_ACCOUNT_NUM)).thenReturn(transactions);
 
         // When
-        final ResponseEntity actualResult = transactionHistoryController
+        final ResponseEntity<?> actualResult = transactionHistoryController
             .getTransactions(BEARER_TOKEN, AUTHED_ACCOUNT_NUM);
 
         // Then
@@ -180,7 +158,7 @@ class TransactionHistoryControllerTest {
         when(claim.asString()).thenReturn(AUTHED_ACCOUNT_NUM);
 
         // When
-        final ResponseEntity actualResult = transactionHistoryController.getTransactions(BEARER_TOKEN, NON_AUTHED_ACCOUNT_NUM);
+        final ResponseEntity<?> actualResult = transactionHistoryController.getTransactions(BEARER_TOKEN, NON_AUTHED_ACCOUNT_NUM);
 
         // Then
         assertNotNull(actualResult);
@@ -194,7 +172,7 @@ class TransactionHistoryControllerTest {
         when(verifier.verify(TOKEN)).thenThrow(JWTVerificationException.class);
 
         // When
-        final ResponseEntity actualResult = transactionHistoryController.getTransactions(BEARER_TOKEN, AUTHED_ACCOUNT_NUM);
+        final ResponseEntity<?> actualResult = transactionHistoryController.getTransactions(BEARER_TOKEN, AUTHED_ACCOUNT_NUM);
 
         // Then
         assertNotNull(actualResult);
@@ -211,7 +189,7 @@ class TransactionHistoryControllerTest {
         when(cache.get(AUTHED_ACCOUNT_NUM)).thenThrow(ExecutionException.class);
 
         // When
-        final ResponseEntity actualResult = transactionHistoryController
+        final ResponseEntity<?> actualResult = transactionHistoryController
             .getTransactions(BEARER_TOKEN, AUTHED_ACCOUNT_NUM);
 
         // Then

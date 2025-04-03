@@ -4,12 +4,23 @@
 	"name": "transactionhistory",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
 	"image": "mcr.microsoft.com/devcontainers/base:jammy",
-	"workspaceFolder": "/workspaces/bank-of-anthos-demo/transactionhistory",
+
+	"workspaceMount": "source=${localWorkspaceFolder},target=/bank-of-anthos-demo/transactionhistory,type=bind",
+	"workspaceFolder": "/bank-of-anthos-demo/transactionhistory",	
+	"mounts": [
+		{
+			"source": "${localWorkspaceFolder}/../",
+			"target": "/bank-of-anthos-demo",
+			"type": "bind"
+		}		
+	],	
 	"features": {
-		"ghcr.io/devcontainers/features/docker-outside-of-docker": {
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {
+			"installDockerBuildx": true,
+			"installDockerComposeSwitch": true,
 			"version": "latest",
-			"moby": false
-      	},
+			"dockerDashComposeVersion": "v2"
+		},
 		"ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
 			"version": "latest",
 			"helm": "latest",
@@ -20,7 +31,7 @@
 			"version": "latest"
 		},
 		"ghcr.io/devcontainers/features/java": {
-			"version": "8",
+			"version": "17",
 			"jdkDistro": "amzn"
 		}
 	}
